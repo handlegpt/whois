@@ -27,7 +27,11 @@
     "dev": "node --enable-source-maps --watch src/whoiser.ts",
     "prettier": "prettier \"src/*.js\"",
     "prettier:write": "npm run prettier -- --write",
-    "test": "node --test src/*.test.ts"
+    "test": "node --test src/*.test.ts",
+    "start": "pm2 start src/server.js --name dwhois",
+    "stop": "pm2 stop dwhois",
+    "restart": "pm2 restart dwhois",
+    "logs": "pm2 logs dwhois"
   },
   "dependencies": {
     "punycode": "^2.1.1",
