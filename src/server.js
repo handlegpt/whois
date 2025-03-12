@@ -42,6 +42,14 @@ async function checkDomainStatus(baseName) {
                     marketplaces: marketplaces,
                     whois: whoisResult
                 };
+
+                // 调试输出
+                console.log(`Domain ${domain} status:`, {
+                    status: results[tld].status,
+                    forSale: results[tld].forSale,
+                    marketplaces: results[tld].marketplaces
+                });
+                
             } catch (error) {
                 results[tld] = {
                     status: 'error',
@@ -59,15 +67,24 @@ async function checkMarketplaces(domain) {
     const marketplaces = {
         afternic: {
             url: `https://www.afternic.com/domain/${domain}`,
-            headers: { 'Accept': 'text/html' }
+            headers: { 
+                'Accept': 'text/html',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
         },
         sedo: {
-            url: `https://sedo.com/search/?keyword=${domain}`,
-            headers: { 'Accept': 'text/html' }
+            url: `https://sedo.com/search/details/?language=us&domain=${domain}`,
+            headers: { 
+                'Accept': 'text/html',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
         },
         dan: {
             url: `https://dan.com/buy-domain/${domain}`,
-            headers: { 'Accept': 'text/html' }
+            headers: { 
+                'Accept': 'text/html',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
         }
     };
 
@@ -82,8 +99,22 @@ async function checkMarketplaces(domain) {
                     redirect: 'follow'
                 });
                 
-                // 如果页面存在且不是404，认为域名可能在售
-                results[market] = response.status === 200;
+                const text = await response.text();
+                
+                // 根据不同市场检查域名是否在售
+                switch(market) {
+                    case 'afternic':
+                        results[market] = text.includes('Buy Now') || text.includes('Make Offer');
+                        break;
+                    case 'sedo':
+                        results[market] = text.includes('Buy Now') || text.includes('Domain for sale');
+                        break;
+                    case 'dan':
+                        results[market] = text.includes('Buy Now') || text.includes('Make Offer');
+                        break;
+                    default:
+                        results[market] = false;
+                }
                 
             } catch (error) {
                 console.error(`Error checking ${market}:`, error);
