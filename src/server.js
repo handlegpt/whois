@@ -39,6 +39,7 @@ async function checkDomainStatus(baseName) {
                 results[tld] = {
                     status: whoisResult ? 'registered' : 'available',
                     forSale: isForSale,
+                    marketplaces: marketplaces,
                     whois: whoisResult
                 };
             } catch (error) {
@@ -57,23 +58,16 @@ async function checkDomainStatus(baseName) {
 async function checkMarketplaces(domain) {
     const marketplaces = {
         afternic: {
-            url: `https://api.afternic.com/v3/domain/${domain}`,
-            headers: { 'Accept': 'application/json' }
+            url: `https://www.afternic.com/domain/${domain}`,
+            headers: { 'Accept': 'text/html' }
         },
         sedo: {
-            url: `https://api.sedo.com/api/v1/domain/${domain}`,
-            headers: { 'Accept': 'application/json' }
+            url: `https://sedo.com/search/?keyword=${domain}`,
+            headers: { 'Accept': 'text/html' }
         },
         dan: {
-            url: `https://api.dan.com/v1/domains/${domain}/status`,
-            headers: { 'Accept': 'application/json' }
-        },
-        godaddy: {
-            url: `https://api.godaddy.com/v1/domains/available?domain=${domain}`,
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
+            url: `https://dan.com/buy-domain/${domain}`,
+            headers: { 'Accept': 'text/html' }
         }
     };
 
@@ -84,19 +78,13 @@ async function checkMarketplaces(domain) {
             try {
                 const response = await fetch(config.url, {
                     method: 'GET',
-                    headers: config.headers
+                    headers: config.headers,
+                    redirect: 'follow'
                 });
                 
-                // 检查响应状态和内容
-                if (response.ok) {
-                    const data = await response.text();
-                    // 如果响应包含特定的关键词，说明域名可能在售
-                    results[market] = data.toLowerCase().includes('for sale') || 
-                                    data.toLowerCase().includes('available') ||
-                                    data.toLowerCase().includes('price');
-                } else {
-                    results[market] = false;
-                }
+                // 如果页面存在且不是404，认为域名可能在售
+                results[market] = response.status === 200;
+                
             } catch (error) {
                 console.error(`Error checking ${market}:`, error);
                 results[market] = false;
