@@ -9,7 +9,7 @@
     "tld",
     "ip"
   ],
-  "author": "tomi",
+  "author": "dwhois",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -30,7 +30,8 @@
     "test": "node --test src/*.test.ts"
   },
   "dependencies": {
-    "punycode": "^2.1.1"
+    "punycode": "^2.1.1",
+    "node-fetch": "^3.3.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
