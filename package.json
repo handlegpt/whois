@@ -1,5 +1,5 @@
 {
-  "name": "whoiser",
+  "name": "dwhois",
   "version": "2.0.0-beta.3",
   "description": "Whois info for domains, TLDs, IPs, and ASN",
   "type": "module",
@@ -9,13 +9,13 @@
     "tld",
     "ip"
   ],
-  "author": "Andrei Igna <andrei@laye.red>",
+  "author": "tomi",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/LayeredStudio/whoiser.git"
+    "url": "git+https://github.com/handlegpt/whois.git"
   },
-  "homepage": "https://github.com/LayeredStudio/whoiser#readme",
+  "homepage": "http://dwhois.com",
   "exports": "./dist/whoiser.js",
   "types": "./dist/whoiser.d.ts",
   "files": [
