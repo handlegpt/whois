@@ -115,10 +115,20 @@
             border-radius: 6px;
             color: #475569;
             text-decoration: none;
+            gap: 0.5rem;
         }
         .marketplace-item.available {
             border-color: #22c55e;
             color: #22c55e;
+        }
+        .marketplace-item.available::before {
+            content: "✓";
+            font-weight: bold;
+        }
+        .marketplace-item:not(.available)::before {
+            content: "×";
+            color: #ef4444;
+            font-weight: bold;
         }
         #result {
             font-family: ui-monospace, monospace;
@@ -184,15 +194,12 @@
             godaddy: 'GoDaddy'
         };
 
-        function getMarketplaceUrl(marketplace, domain) {
-            const urls = {
-                afternic: `https://www.afternic.com/domain/${domain}`,
-                sedo: `https://sedo.com/search/?keyword=${domain}`,
-                dan: `https://dan.com/buy-domain/${domain}`,
-                godaddy: `https://www.godaddy.com/domain-auctions/${domain}`
-            };
-            return urls[marketplace];
-        }
+        const MARKETPLACE_URLS = {
+            afternic: (domain) => `https://www.afternic.com/domain/${domain}`,
+            sedo: (domain) => `https://sedo.com/search/?keyword=${domain}`,
+            dan: (domain) => `https://dan.com/buy-domain/${domain}`,
+            godaddy: (domain) => `https://www.godaddy.com/domain-auctions/${domain}`
+        };
 
         async function search() {
             const query = document.getElementById('query').value.trim();
@@ -222,11 +229,12 @@
                 if (type === 'domain' && data.marketplaces) {
                     marketplaceList.innerHTML = Object.entries(data.marketplaces)
                         .map(([market, available]) => `
-                            <a href="${getMarketplaceUrl(market, query)}" 
+                            <a href="${MARKETPLACE_URLS[market](query)}" 
                                target="_blank" 
                                class="marketplace-item ${available ? 'available' : ''}"
                                rel="noopener noreferrer">
                                 ${MARKETPLACE_NAMES[market]}
+                                ${available ? ' (在售)' : ' (未在售)'}
                             </a>
                         `).join('');
                     marketplaces.style.display = 'block';

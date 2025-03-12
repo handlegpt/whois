@@ -16,24 +16,67 @@ app.use(express.static(path.join(__dirname, '../public')));
 // 检查域名市场
 async function checkMarketplaces(domain) {
     const marketplaces = {
-        afternic: `https://www.afternic.com/domain/${domain}`,
-        sedo: `https://sedo.com/search/?keyword=${domain}`,
-        dan: `https://dan.com/buy-domain/${domain}`,
-        godaddy: `https://www.godaddy.com/domain-auctions/${domain}`,
+        afternic: {
+            url: `https://api.afternic.com/v2/domain/available/${domain}`,
+            headers: { 'Accept': 'application/json' }
+        },
+        sedo: {
+            url: `https://sedo.com/api/market.php?domain=${domain}&language=us`,
+            headers: { 'Accept': 'application/json' }
+        },
+        dan: {
+            url: `https://api.dan.com/v1/domains/${domain}/check`,
+            headers: { 'Accept': 'application/json' }
+        }
     };
 
     const results = {};
     
     await Promise.all(
-        Object.entries(marketplaces).map(async ([market, url]) => {
+        Object.entries(marketplaces).map(async ([market, config]) => {
             try {
-                const response = await fetch(url, { method: 'HEAD' });
-                results[market] = response.status === 200;
+                const response = await fetch(config.url, {
+                    method: 'GET',
+                    headers: config.headers
+                });
+                const data = await response.json();
+                
+                // 根据不同平台的API响应格式判断
+                switch(market) {
+                    case 'afternic':
+                        results[market] = data.status === 'available';
+                        break;
+                    case 'sedo':
+                        results[market] = data.isForSale === true;
+                        break;
+                    case 'dan':
+                        results[market] = data.available === true;
+                        break;
+                    default:
+                        results[market] = false;
+                }
             } catch (error) {
+                console.error(`Error checking ${market}:`, error);
                 results[market] = false;
             }
         })
     );
+
+    // 添加额外的检查结果
+    try {
+        // 检查是否在GoDaddy拍卖中
+        const gdResponse = await fetch(`https://api.godaddy.com/v1/domains/available?domain=${domain}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        const gdData = await gdResponse.json();
+        results.godaddy = gdData.forSale === true;
+    } catch (error) {
+        console.error('Error checking GoDaddy:', error);
+        results.godaddy = false;
+    }
 
     return results;
 }
