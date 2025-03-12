@@ -13,19 +13,59 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
+// 常用顶级域名列表
+const POPULAR_TLDS = [
+    'com', 'net', 'org', 'io', 'ai', 'app',
+    'dev', 'co', 'me', 'biz', 'info', 'xyz',
+    'online', 'site', 'top', 'live', 'link'
+];
+
+// 检查域名可用性和销售状态
+async function checkDomainStatus(baseName) {
+    const results = {};
+    
+    // 检查每个TLD
+    await Promise.all(
+        POPULAR_TLDS.map(async (tld) => {
+            const domain = `${baseName}.${tld}`;
+            try {
+                // 检查whois信息
+                const whoisResult = await whoisDomain(domain);
+                
+                // 检查域名市场
+                const marketplaces = await checkMarketplaces(domain);
+                const isForSale = Object.values(marketplaces).some(v => v);
+                
+                results[tld] = {
+                    status: whoisResult ? 'registered' : 'available',
+                    forSale: isForSale,
+                    whois: whoisResult
+                };
+            } catch (error) {
+                results[tld] = {
+                    status: 'error',
+                    error: error.message
+                };
+            }
+        })
+    );
+
+    return results;
+}
+
 // 检查域名市场
 async function checkMarketplaces(domain) {
     const marketplaces = {
         afternic: {
-            url: `https://api.afternic.com/v2/domain/available/${domain}`,
+            url: `https://www.afternic.com/domain/${domain}`,
             headers: { 'Accept': 'application/json' }
         },
         sedo: {
-            url: `https://sedo.com/api/market.php?domain=${domain}&language=us`,
+            url: `https://sedo.com/search/?keyword=${domain}`,
             headers: { 'Accept': 'application/json' }
         },
         dan: {
-            url: `https://api.dan.com/v1/domains/${domain}/check`,
+            url: `https://dan.com/buy-domain/${domain}`,
             headers: { 'Accept': 'application/json' }
         }
     };
@@ -35,48 +75,14 @@ async function checkMarketplaces(domain) {
     await Promise.all(
         Object.entries(marketplaces).map(async ([market, config]) => {
             try {
-                const response = await fetch(config.url, {
-                    method: 'GET',
-                    headers: config.headers
-                });
-                const data = await response.json();
-                
-                // 根据不同平台的API响应格式判断
-                switch(market) {
-                    case 'afternic':
-                        results[market] = data.status === 'available';
-                        break;
-                    case 'sedo':
-                        results[market] = data.isForSale === true;
-                        break;
-                    case 'dan':
-                        results[market] = data.available === true;
-                        break;
-                    default:
-                        results[market] = false;
-                }
+                const response = await fetch(config.url);
+                results[market] = response.status === 200;
             } catch (error) {
                 console.error(`Error checking ${market}:`, error);
                 results[market] = false;
             }
         })
     );
-
-    // 添加额外的检查结果
-    try {
-        // 检查是否在GoDaddy拍卖中
-        const gdResponse = await fetch(`https://api.godaddy.com/v1/domains/available?domain=${domain}`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-        const gdData = await gdResponse.json();
-        results.godaddy = gdData.forSale === true;
-    } catch (error) {
-        console.error('Error checking GoDaddy:', error);
-        results.godaddy = false;
-    }
 
     return results;
 }
@@ -86,17 +92,22 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-// API endpoint for domain WHOIS with marketplace check
+// API endpoint for domain WHOIS with status check
 app.get('/api/domain/:domain', async (req, res) => {
     try {
-        const [whoisResult, marketplaces] = await Promise.all([
-            whoisDomain(req.params.domain),
-            checkMarketplaces(req.params.domain)
-        ]);
+        const domain = req.params.domain;
+        const baseName = domain.split('.')[0];
+        
+        // 获取所有TLD的状态
+        const domainStatus = await checkDomainStatus(baseName);
+        
+        // 获取查询域名的详细whois信息
+        const whoisResult = await whoisDomain(domain);
 
         res.json({
+            query: domain,
             whois: whoisResult,
-            marketplaces
+            tldStatus: domainStatus
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
