@@ -2,7 +2,7 @@ import express from 'express';
 import { whoisDomain, whoisIp, whoisAsn } from '../dist/whoiser.js';
 
 const app = express();
-const port = process.env.PORT || 80;
+const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
