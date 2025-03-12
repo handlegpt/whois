@@ -5,54 +5,154 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DWhois - WHOIS查询服务</title>
     <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --border-color: #e2e8f0;
+        }
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .container {
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
+            padding: 2rem;
+            flex: 1;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        .description {
+            color: #64748b;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
         }
         .search-box {
-            margin: 20px 0;
-            padding: 20px;
-            background: #f5f5f5;
-            border-radius: 8px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            margin-bottom: 2rem;
+        }
+        .input-group {
+            display: flex;
+            gap: 1rem;
         }
         input[type="text"] {
-            width: 70%;
-            padding: 10px;
-            font-size: 16px;
+            flex: 1;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus {
+            border-color: var(--primary-color);
         }
         button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background: #007bff;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            background: var(--primary-color);
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
+            transition: background-color 0.2s;
         }
         button:hover {
-            background: #0056b3;
+            background: #1d4ed8;
+        }
+        .result-container {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            display: none;
+        }
+        .result-container.show {
+            display: block;
         }
         #result {
-            margin-top: 20px;
+            font-family: ui-monospace, monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 0;
             white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+        }
+        .loading.show {
+            display: block;
         }
     </style>
 </head>
 <body>
-    <h1>DWhois - WHOIS查询服务</h1>
-    <div class="search-box">
-        <input type="text" id="query" placeholder="输入域名、IP或ASN...">
-        <button onclick="search()">查询</button>
+    <div class="container">
+        <header>
+            <h1>DWhois</h1>
+            <p class="description">快速查询域名、IP和ASN的WHOIS信息</p>
+        </header>
+        
+        <div class="search-box">
+            <div class="input-group">
+                <input type="text" id="query" placeholder="输入域名、IP或ASN..." autofocus>
+                <button onclick="search()">查询</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            正在查询中...
+        </div>
+
+        <div class="result-container" id="result-container">
+            <pre id="result"></pre>
+        </div>
     </div>
-    <pre id="result"></pre>
+
+    <footer>
+        <p>© 2024 DWhois. 提供快速、准确的WHOIS信息查询服务。</p>
+    </footer>
 
     <script>
         async function search() {
             const query = document.getElementById('query').value.trim();
             if (!query) return;
+
+            const loading = document.getElementById('loading');
+            const resultContainer = document.getElementById('result-container');
+            const result = document.getElementById('result');
+
+            loading.classList.add('show');
+            resultContainer.classList.remove('show');
 
             let type = 'domain';
             if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(query)) {
@@ -64,13 +164,16 @@
             try {
                 const response = await fetch(`/api/${type}/${query}`);
                 const data = await response.json();
-                document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+                result.textContent = JSON.stringify(data, null, 2);
+                resultContainer.classList.add('show');
             } catch (error) {
-                document.getElementById('result').textContent = '查询出错: ' + error.message;
+                result.textContent = '查询出错: ' + error.message;
+                resultContainer.classList.add('show');
+            } finally {
+                loading.classList.remove('show');
             }
         }
 
-        // 支持回车键查询
         document.getElementById('query').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 search();
