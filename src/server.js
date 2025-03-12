@@ -1,10 +1,21 @@
 import express from 'express';
 import { whoisDomain, whoisIp, whoisAsn } from '../dist/whoiser.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Root endpoint
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+});
 
 // API endpoint for domain WHOIS
 app.get('/api/domain/:domain', async (req, res) => {
