@@ -105,6 +105,9 @@
             border-radius: 8px;
             padding: 1rem;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
         }
         .status-item.available {
             border-color: #22c55e;
@@ -206,6 +209,22 @@
         .loading.show {
             display: block;
         }
+        .marketplace-links {
+            font-size: 0.8rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+        }
+        .marketplace-link {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.05);
+            color: inherit;
+            text-decoration: none;
+        }
+        .marketplace-link:hover {
+            background: rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -285,15 +304,31 @@
                         .map(([tld, status]) => {
                             const domain = `${baseName}.${tld}`;
                             let statusClass = status.status;
-                            if (status.forSale) statusClass = 'for-sale';
+                            let statusText = '已注册';
+                            
+                            if (status.forSale) {
+                                statusClass = 'for-sale';
+                                statusText = '在售';
+                            } else if (status.status === 'available') {
+                                statusText = '可注册';
+                            }
+                            
+                            // 生成市场链接
+                            const marketplaceLinks = Object.entries(MARKETPLACE_URLS)
+                                .map(([market, urlFn]) => {
+                                    if (status.marketplaces && status.marketplaces[market]) {
+                                        return `<a href="${urlFn(domain)}" target="_blank" class="marketplace-link">${MARKETPLACE_NAMES[market]}</a>`;
+                                    }
+                                    return '';
+                                })
+                                .filter(link => link)
+                                .join('');
                             
                             return `
                                 <div class="status-item ${statusClass}">
                                     <div class="domain-name">${domain}</div>
-                                    <div class="status-badge ${statusClass}">
-                                        ${status.forSale ? '在售' : 
-                                          status.status === 'available' ? '可注册' : '已注册'}
-                                    </div>
+                                    <div class="status-badge ${statusClass}">${statusText}</div>
+                                    ${status.forSale ? `<div class="marketplace-links">${marketplaceLinks}</div>` : ''}
                                 </div>
                             `;
                         }).join('');
