@@ -225,6 +225,14 @@
         .marketplace-link:hover {
             background: rgba(0,0,0,0.1);
         }
+        .marketplace-info {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -305,30 +313,36 @@
                             const domain = `${baseName}.${tld}`;
                             let statusClass = status.status;
                             let statusText = '已注册';
+                            let marketplaceInfo = '';
                             
                             if (status.forSale) {
                                 statusClass = 'for-sale';
                                 statusText = '在售';
+                                
+                                // 显示具体在哪些市场出售
+                                if (status.marketplaces) {
+                                    const availableMarkets = Object.entries(status.marketplaces)
+                                        .filter(([_, isAvailable]) => isAvailable)
+                                        .map(([market, _]) => MARKETPLACE_NAMES[market])
+                                        .join(', ');
+                                    
+                                    if (availableMarkets) {
+                                        marketplaceInfo = `
+                                            <div class="marketplace-info">
+                                                在售平台: ${availableMarkets}
+                                            </div>
+                                        `;
+                                    }
+                                }
                             } else if (status.status === 'available') {
                                 statusText = '可注册';
                             }
-                            
-                            // 生成市场链接
-                            const marketplaceLinks = Object.entries(MARKETPLACE_URLS)
-                                .map(([market, urlFn]) => {
-                                    if (status.marketplaces && status.marketplaces[market]) {
-                                        return `<a href="${urlFn(domain)}" target="_blank" class="marketplace-link">${MARKETPLACE_NAMES[market]}</a>`;
-                                    }
-                                    return '';
-                                })
-                                .filter(link => link)
-                                .join('');
                             
                             return `
                                 <div class="status-item ${statusClass}">
                                     <div class="domain-name">${domain}</div>
                                     <div class="status-badge ${statusClass}">${statusText}</div>
-                                    ${status.forSale ? `<div class="marketplace-links">${marketplaceLinks}</div>` : ''}
+                                    ${marketplaceInfo}
                                 </div>
                             `;
                         }).join('');
